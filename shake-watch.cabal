@@ -1,13 +1,13 @@
 name:                shake-watch
 version:             0.1.0.0
--- synopsis:
+synopsis:            watching file changes for Shake build system
 -- description:
 homepage:            https://github.com/sigrlami/shake-watch#readme
 license:             BSD3
 license-file:        LICENSE
 author:              Sergey Bushnyak
 maintainer:          sergey.bushnyak@sigrlami.eu
-copyright:           Copyright: (c) 2017 Sergey Bushnyak
+copyright:           Copyright: (c) 2019 Sergey Bushnyak
 category:            Web
 build-type:          Simple
 cabal-version:       >=1.10
@@ -18,3 +18,9 @@ executable shake-watch
   main-is:             Main.hs
   default-language:    Haskell2010
   build-depends:       base >= 4.7 && < 5
+                     , shake
+                     , text
+                     , time
+                     , directory
+                     , fsnotify
+                     , containers
