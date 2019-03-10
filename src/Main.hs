@@ -14,8 +14,10 @@ import           Development.Shake
 import           Development.Shake.Database
 import           System.Directory           (getCurrentDirectory)
 import           System.Environment         (getArgs, getEnvironment, withArgs)
+import           System.FilePath
 import           System.FSNotify            (eventPath, watchTreeChan,
                                              withManager)
+import           System.Posix.Process
 
 --------------------------------------------------------------------------------
 
@@ -56,3 +58,7 @@ main = do
 
     _ ->
       realMain
+
+realMain :: IO ()
+realMain = do
+  return $ ()
