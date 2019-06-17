@@ -12,6 +12,7 @@ import           Data.Functor               (void)
 import qualified Data.Set                   as Set
 import           Development.Shake
 import           Development.Shake.Database
+import           Language.Haskell.Ghcid     as Ghcid
 import           System.Directory           (getCurrentDirectory)
 import           System.Environment         (getArgs, getEnvironment, withArgs)
 import           System.FilePath
@@ -62,3 +63,73 @@ main = do
 realMain :: IO ()
 realMain = do
   return $ ()
+
+
+-- | Start or update a ghcid session.
+--
+ghcidStart :: CommandArguments -> Shake GhcidEnv ()
+ghcidStart copts = do
+    currentBufferPath <- fromObjectUnsafe <$> vim_call_function "expand" [ObjectBinary "%:p:h"]
+    liftIO (determineProjectSettings' currentBufferPath) >>= \case
+        Nothing -> void $
+            yesOrNo "Could not determine project settings. This plugin needs a project with a .cabal file to work."
+        Just s -> case bang copts of
+            Just True ->
+                startOrReload s
+
+            _ -> do
+                d <- askForDirectory
+                        "Specify directory from which ghcid should be started."
+                        (Just (rootDir s))
+                c <- askForString
+                        "Specify the command to execute (e.g. \"ghci\")."
+                        (Just (cmd s))
+
+                let s' = ProjectSettings d c
+                whenM (yesOrNo "Save settings to file?") .
+                    liftIO . BS.writeFile (d </> "ghcid.yaml") $ encode s'
+                startOrReload s
+
+
+-- | Start a new ghcid session or reload the modules to update the quickfix list.
+startOrReload :: ProjectSettings -> Shake GhcidEnv ()
+startOrReload s@(ProjectSettings d c) = do
+    sessions <- atomically . readTVar =<< asks startedSessions
+    case Map.lookup d sessions of
+        Nothing -> do
+            (g, ls) <- liftIO (startGhci c (Just d) (\_ _ -> return ()))
+                `catch` \(SomeException e) ->  err . pretty $ "Failed to start ghcid session: " <> show e
+            applyQuickfixActions $ loadToQuickfix ls
+            void $ vim_command "cwindow"
+            ra <- addAutocmd "BufWritePost" Sync def (startOrReload s) >>= \case
+                Nothing ->
+                    return $ return ()
+
+                Just (Left a) ->
+                    return a
+
+                Just (Right rk) ->
+                    return $ Resource.release rk
+
+            modifyStartedSessions $ Map.insert d (g,ra >> liftIO (stopGhci g))
+
+        Just (ghci, _) -> do
+            applyQuickfixActions =<< loadToQuickfix <$> liftIO (reload ghci)
+            void $ vim_command "cwindow"
+
+ghcidStop :: CommandArguments -> Shake GhcidEnv ()
+ghcidStop _ = do
+    d <- fromObjectUnsafe <$> vim_call_function "expand" [ObjectBinary "%:p:h"]
+    sessions <- atomically .readTVar =<< asks startedSessions
+    case Map.lookupLE d sessions of
+        Nothing ->
+            return ()
+        Just (p,(_, releaseAction)) -> do
+            modifyStartedSessions $ Map.delete p
+            releaseAction
+
+-- | Same as @:GhcidStop@ followed by @:GhcidStart!@. Note the bang!
+ghcidRestart :: CommandArguments -> Shake GhcidEnv ()
+ghcidRestart _ = do
+    ghcidStop def
+    ghcidStart def { bang = Just True }
