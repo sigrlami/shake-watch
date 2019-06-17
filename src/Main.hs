@@ -14,7 +14,7 @@ import           Development.Shake
 import           Development.Shake.Database
 import           Language.Haskell.Ghcid     as Ghcid
 import           System.Directory           (getCurrentDirectory)
-import           System.Environment         (getArgs, getEnvironment, withArgs)
+import           System.Environment         (getArgs, getEnvironment, withArgs)1
 import           System.FilePath
 import           Options.Applicative
 import           System.FSNotify            (eventPath, watchTreeChan,
@@ -97,12 +97,3 @@ main = do
 realMain :: IO ()
 realMain = do
   return $ ()
-
-ghcidStart :: IO ()
-ghcidStart copts = do
-
-ghcidStop :: IO ()
-ghcidStop _ = do
-
-ghcidRestart :: IO ()
-ghcidRestart _ = do
