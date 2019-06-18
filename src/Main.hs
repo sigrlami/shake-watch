@@ -13,10 +13,10 @@ import qualified Data.Set                   as Set
 import           Development.Shake
 import           Development.Shake.Database
 import           Language.Haskell.Ghcid     as Ghcid
-import           System.Directory           (getCurrentDirectory)
-import           System.Environment         (getArgs, getEnvironment, withArgs)1
-import           System.FilePath
 import           Options.Applicative
+import           System.Directory           (getCurrentDirectory)
+import           System.Environment         (getArgs, getEnvironment, withArgs)
+import           System.FilePath
 import           System.FSNotify            (eventPath, watchTreeChan,
                                              withManager)
 import           System.Posix.Process
@@ -25,11 +25,11 @@ import           System.Posix.Process
 
 data WatchOpt =
   WatchOpt
-    { watchPath       :: String    -- ^ path to watchc dir, by default current
-    , includePath     :: String    -- ^ include particular files when watching dir
-    , excludePath     :: String    -- ^ exclude particular files when watching dir
-    , delay           :: Int       -- ^ milliseconds to wait for duplicate events
-    , action          :: [String]  -- ^ command to run
+    { watchPath   :: String    -- ^ path to watchc dir, by default current
+    , includePath :: String    -- ^ include particular files when watching dir
+    , excludePath :: String    -- ^ exclude particular files when watching dir
+    , delay       :: Int       -- ^ milliseconds to wait for duplicate events
+    , action      :: [String]  -- ^ command to run
     } deriving (Show)
 
 watchOpt :: Parser WatchOpt
@@ -96,4 +96,16 @@ main = do
 
 realMain :: IO ()
 realMain = do
+  return $ ()
+
+ghcidStart :: IO ()
+ghcidStart = do
+  return $ ()
+
+ghcidStop :: IO ()
+ghcidStop  = do
+  return $ ()
+
+ghcidRestart :: IO ()
+ghcidRestart = do
   return $ ()

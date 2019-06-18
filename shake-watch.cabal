@@ -27,3 +27,4 @@ executable shake-watch-exe
                      , filepath
                      , unix
                      , ghcid
+                     , optparse-applicative
