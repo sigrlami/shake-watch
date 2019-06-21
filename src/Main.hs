@@ -100,12 +100,18 @@ realMain = do
 
 ghcidStart :: IO ()
 ghcidStart = do
+  env <- getEnvironment
+  executeFile "ghcid" True ["-- command 'stack ghci' "] (Just env) -- start ghcid with tracking functionality
   return $ ()
 
 ghcidStop :: IO ()
 ghcidStop  = do
+  env <- getEnvironment
+  executeFile "killall" True ["ghcid"] (Just env)
   return $ ()
 
 ghcidRestart :: IO ()
 ghcidRestart = do
+  ghcidStop
+  ghcidStart
   return $ ()
