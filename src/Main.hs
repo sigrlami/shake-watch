@@ -101,7 +101,9 @@ realMain = do
 ghcidStart :: IO ()
 ghcidStart = do
   env <- getEnvironment
-  executeFile "ghcid" True ["-- command 'stack ghci' "] (Just env) -- start ghcid with tracking functionality
+  pid <- forkProcess $ do
+    putStrLn $ "Loading GHCi for live reloads"
+    executeFile "ghcid" True ["-- command 'stack ghci' --reload"] (Just env) -- start ghcid with tracking functionality
   return $ ()
 
 ghcidStop :: IO ()
