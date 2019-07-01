@@ -24,10 +24,12 @@ import           System.Posix.Process
 
 data WatchOpt =
   WatchOpt
-    { watchPath   :: String    -- ^ path to watchc dir, by default current
+    { watchPath   :: String    -- ^ path to watch dir, by default current
     , includePath :: String    -- ^ include particular files when watching dir
     , excludePath :: String    -- ^ exclude particular files when watching dir
     , cache       :: Bool      -- ^ use Shake cache functionality from `Development.Shake.Database`
+    , remake      :: Bool      -- ^ delete old database upon startup
+    , watch       :: Bool      -- ^ rerun shake with the database after any changes observed to the included directories
     , delay       :: Int       -- ^ milliseconds to wait for duplicate events
     , action      :: [String]  -- ^ command to run
     } deriving (Show)
@@ -50,6 +52,14 @@ watchOpt =
                   (  long "cache"
                   <> short 'c'
                   <> long "Switch, to run caching stage (by default = false)")
+    <*> flag False True
+                  (  long "remake"
+                  <> short 'r'
+                  <> long "Switch, to delete old cache on start")
+    <*> flag False True
+                  (  long "watch"
+                  <> short 'w'
+                  <> long "Switch, to actually watch outside directories for changes")
     <*> option auto (  long "throttle"
                     <> value 0
                     <> metavar "MILLIS"
@@ -71,7 +81,7 @@ main = do
          <> header   "Shake Watch")
 
 runWatcher :: WatchOpt -> IO ()
-runWatcher (WatchOpt wp ip ep dl c a ) = do
+runWatcher (WatchOpt wp ip ep ch re wa dl a) = do
   -- Get the list of files that shake considers to be alive. This assumes
   -- we've set
   --
