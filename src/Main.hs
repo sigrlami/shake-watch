@@ -38,13 +38,16 @@ watchOpt :: Parser WatchOpt
 watchOpt =
   WatchOpt
     <$> strOption (  long "path"
+                  <> short 'p'
                   <> metavar "PATH"
                   <> help "directory / file to watch" )
     <*> strOption (  long "include"
+                  <> short 'i'
                   <> value []
                   <> metavar "INCLUDE"
                   <> help "pattern for including files")
     <*> strOption (  long "exclude"
+                  <> short 'e'
                   <> value []
                   <> metavar "EXCLUDE"
                   <> help "pattern for excluding files")
@@ -61,6 +64,7 @@ watchOpt =
                   <> short 'w'
                   <> long "Switch, to actually watch outside directories for changes")
     <*> option auto (  long "throttle"
+                    <> short 't'
                     <> value 0
                     <> metavar "MILLIS"
                     <> help "milliseconds to wait for duplicate events")
@@ -82,6 +86,9 @@ main = do
 
 runWatcher :: WatchOpt -> IO ()
 runWatcher (WatchOpt wp ip ep ch re wa dl a) = do
+
+  putStrLn $ "Watching external dir:" ++ wp
+
   -- Get the list of files that shake considers to be alive. This assumes
   -- we've set
   --
