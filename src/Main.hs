@@ -1,7 +1,6 @@
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections     #-}
-{-# LANGUAGE ViewPatterns      #-}
 
 module Main where
 
@@ -28,6 +27,7 @@ data WatchOpt =
     { watchPath   :: String    -- ^ path to watchc dir, by default current
     , includePath :: String    -- ^ include particular files when watching dir
     , excludePath :: String    -- ^ exclude particular files when watching dir
+    , cache       :: Bool      -- ^ use Shake cache functionality from `Development.Shake.Database`
     , delay       :: Int       -- ^ milliseconds to wait for duplicate events
     , action      :: [String]  -- ^ command to run
     } deriving (Show)
@@ -46,6 +46,10 @@ watchOpt =
                   <> value []
                   <> metavar "EXCLUDE"
                   <> help "pattern for excluding files")
+    <*> flag False True
+                  (  long "cache"
+                  <> short 'c'
+                  <> long "Switch, to run caching stage (by default = false)")
     <*> option auto (  long "throttle"
                     <> value 0
                     <> metavar "MILLIS"
@@ -58,45 +62,37 @@ watchOpt =
 
 main :: IO ()
 main = do
-  args <- getArgs
-  case args of
-    "watch":args ->
-      -- Strip off the "watch" arg for the real shake script.
-      withArgs args $ do
-        -- Run the real main under 'try', ignoring synchronous exceptions
-        -- because we don't care if the build fails - we want to watch & rebuild
-        -- regardless. Re-throw async exceptions.
-        try realMain >>= \case
-          Left (fromException -> Just (SomeAsyncException ex)) -> throwIO ex
-          _ -> pure ()
+  -- parse command line options, redirect execution
+  execParser opts >>= runWatcher
+    where
+      opts = info (helper <*> watchOpt)
+         (  fullDesc
+         <> progDesc "Start shake watching functionality"
+         <> header   "Shake Watch")
 
-        -- Get the list of files that shake considers to be alive. This assumes
-        -- we've set
-        --
-        --   shakeLiveFiles = [".shake/live"]
-        --
-        cwd   <- getCurrentDirectory
-        files <- Set.fromList . map (cwd </>) . lines <$> readFile ".shake/live"
+runWatcher :: WatchOpt -> IO ()
+runWatcher (WatchOpt wp ip ep dl c a ) = do
+  -- Get the list of files that shake considers to be alive. This assumes
+  -- we've set
+  --
+  --   shakeLiveFiles = [".shake/live"]
+  --
+  cwd   <- getCurrentDirectory
+  files <- Set.fromList . map (cwd </>) . lines <$> readFile ".shake/live"
 
-        -- Start watching the filesystem, and rebuild once any of these files
-        -- changes.
-        withManager $ \manager -> do
-          chan <- newChan
-          void (watchTreeChan manager "." ((`elem` files) . eventPath) chan)
-          void (readChan chan) -- We block here
+  -- Start watching the filesystem, and rebuild once any of these files
+  -- changes.
+  withManager $ \manager -> do
+    chan <- newChan
+    void (watchTreeChan manager "." ((`elem` files) . eventPath) chan)
+    void (readChan chan) -- We block here
 
-        -- Loop. Here my compiled shakefile is itself a build target, so I exec
-        -- it rather than loop here, to get the latest & greatest shake
-        -- executable.
-        env <- getEnvironment
-        executeFile "bin/Shakefile" False ("watch":args) (Just env)
+    -- Loop. Here my compiled shakefile is itself a build target, so I exec
+    -- it rather than loop here, to get the latest & greatest shake
+    -- executable.
+    env <- getEnvironment
+    executeFile "bin/Shakefile" False (["watch"]) (Just env)
 
-    _ ->
-      realMain
-
-realMain :: IO ()
-realMain = do
-  return $ ()
 
 ghcidStart :: IO ()
 ghcidStart = do
