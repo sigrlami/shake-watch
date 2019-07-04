@@ -4,8 +4,7 @@
 
 module Main where
 
-import           Control.Concurrent                            (newChan,
-                                                                readChan)
+import           Control.Concurrent
 import           Control.Exception                             (SomeAsyncException (..),
                                                                 fromException,
                                                                 throwIO, try)
@@ -137,7 +136,6 @@ runWatcher opts@(WatchOpt wp ip ep ch re wa dl a) = do
       let cbl = head $ filter (isInfixOf ".cabal") files
       hs <- getSourceDirectories cbl
 
-
       -- Get the list of files that shake considers to be alive. This assumes
       -- user set
       --
@@ -149,16 +147,34 @@ runWatcher opts@(WatchOpt wp ip ep ch re wa dl a) = do
           -- no Shake live defined in project
           -- identify files to watch on our own
 
-          -- 1 haskell source files
-          -- 2 additional files
-          putStrLn $ show $ hs
+          -- 1 find haskell source directories
+          putStrLn $ "shake-watch: tracking haskell at: " ++ (show $ hs)
+          hsfiles <- listDirectory $ head hs
+          forkIO $
+            withManager $
+              \manager -> do
+                chan <- newChan
+                void (watchTreeChan manager "." ((`elem` hsfiles) . eventPath) chan)
+                void (readChan chan) -- We block here
+                -- TODO: load ghcid
+
+          -- 2 additional directories provided by shake-watch user
+          putStrLn $ "shake-watch: tracking additional files at " ++ (show $ wp)
+          withManager $
+            \manager -> do
+              chan <- newChan
+              void (watchTreeChan manager "." ((`elem` files) . eventPath) chan)
+              void (readChan chan) -- We block here
+
+              env <- getEnvironment
+              executeFile "bin/Shakefile" False (["watch"]) (Just env)
+
+
           return $ ()
 
         True  -> do
           files <- Set.fromList . map (cwd </>) . lines <$> readFile ".shake/live"
           putStrLn $ show $ files
-
-
 
           -- Start watching the filesystem with FSNotify, and rebuild once any of these files
           -- changes.
@@ -204,7 +220,6 @@ ghcidRestart = do
 collectSourceDirectories :: PackageDescription -> [FilePath]
 collectSourceDirectories =
   concatMap hsSourceDirs . allBuildInfo
-
 
 getSourceDirectories :: FilePath -> IO [FilePath]
 getSourceDirectories cabalFile = do
