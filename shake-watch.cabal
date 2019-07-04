@@ -1,5 +1,5 @@
 name:                shake-watch
-version:             0.1.0.1
+version:             0.1.0.2
 synopsis:            watching file changes for Shake build system
 -- description:
 homepage:            https://github.com/sigrlami/shake-watch#readme
@@ -16,9 +16,9 @@ extra-source-files:  README.md
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Shake.Development.Watch
-                     , Shake.Development.Watch.Utils
-                     , Shake.Development.Watch.Types
+  exposed-modules:     Development.Shake.Watch
+                     , Development.Shake.Watch.Utils
+                     , Development.Shake.Watch.Types
   build-depends:       base >= 4.7 && < 5
                      , shake
                      , text

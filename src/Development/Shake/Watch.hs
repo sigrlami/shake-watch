@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections     #-}
 
-module Shake.Development.Watch where
+module Development.Shake.Watch where
 
 import           Control.Concurrent
 import           Control.Exception                             (SomeAsyncException (..),
@@ -38,8 +38,8 @@ import           System.FSNotify                               (eventPath,
                                                                 withManager)
 import           System.Posix.Process
 
-import           Shake.Development.Watch.Types
-import           Shake.Development.Watch.Utils
+import           Development.Shake.Watch.Types
+import           Development.Shake.Watch.Utils
 
 --------------------------------------------------------------------------------
 

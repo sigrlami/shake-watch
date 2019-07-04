@@ -17,6 +17,7 @@ import           Development.Shake                             hiding
 import           Development.Shake.Classes
 import           Development.Shake.Database
 import           Development.Shake.FilePath
+import           Development.Shake.Watch.Types
 import           Distribution.PackageDescription               (GenericPackageDescription,
                                                                 PackageDescription,
                                                                 allBuildInfo,
@@ -27,7 +28,6 @@ import           Distribution.PackageDescription.Parsec        (readGenericPacka
 import           Distribution.Verbosity                        (silent)
 import           Language.Haskell.Ghcid                        as Ghcid
 import           Options.Applicative
-import           Shake.Development.Watch.Types
 import           System.Directory                              (doesFileExist, getCurrentDirectory,
                                                                 listDirectory)
 import           System.Environment                            (getArgs,

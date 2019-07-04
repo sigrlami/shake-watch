@@ -1,4 +1,4 @@
-module Shake.Development.Watch.Types where
+module Development.Shake.Watch.Types where
 
 import           GHC.Generics
 

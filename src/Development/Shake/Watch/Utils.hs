@@ -1,4 +1,4 @@
-module Shake.Development.Watch.Utils where
+module Development.Shake.Watch.Utils where
 
 import           Data.List
 import           Data.Maybe
