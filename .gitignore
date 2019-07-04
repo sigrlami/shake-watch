@@ -1,5 +1,5 @@
 dist
-cabal-dev
+65;5603;1ccabal-dev
 *.o
 *.hi
 *.chi
@@ -68,3 +68,4 @@ elm-stuff
 # Other
 build
 .DS_Store
+.shake
