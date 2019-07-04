@@ -43,9 +43,9 @@ import           Development.Shake.Watch.Utils
 
 --------------------------------------------------------------------------------
 
-runWatcher :: WatchOpt -> Rules () -> IO ()
-runWatcher opts@(WatchOpt wp ip ep ch re wa dl a) rules = do
-  putStrLn $ "Watching external dir:" ++  wp
+runWatcher :: ShakeOptions -> WatchOpt -> Rules () -> IO ()
+runWatcher shOpts opts@(WatchOpt wp ip ep ch re wa dl a) rules = do
+  putStrLn $ "Watching external dir:" ++ wp
 
   -- check whether we're running in cache mode
   case ch of
@@ -62,7 +62,7 @@ runWatcher opts@(WatchOpt wp ip ep ch re wa dl a) rules = do
 
       let sopts = shakeOptions{shakeFiles="/dev/null"}
 
-      (shDb, shClose) <- shakeOpenDatabase sopts rules
+      (shDb, shClose) <- shakeOpenDatabase shOpts rules
       shakeDb         <- shDb
       env             <- getEnvironment
 

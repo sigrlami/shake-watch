@@ -16,3 +16,5 @@ data WatchOpt =
     , delay       :: Int       -- ^ milliseconds to wait for duplicate events
     , action      :: [String]  -- ^ command to run
     } deriving (Show)
+
+defaultWatchOps = WatchOpt "" "" "" True True True 0 []
