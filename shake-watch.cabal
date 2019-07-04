@@ -1,5 +1,5 @@
 name:                shake-watch
-version:             0.1.0.2
+version:             0.1.0.3
 synopsis:            watching file changes for Shake build system
 -- description:
 homepage:            https://github.com/sigrlami/shake-watch#readme
@@ -19,7 +19,7 @@ library
   exposed-modules:     Development.Shake.Watch
                      , Development.Shake.Watch.Utils
                      , Development.Shake.Watch.Types
-  build-depends:       base >= 4.7 && < 5
+  build-depends:       base >= 4 && < 5
                      , shake
                      , text
                      , time
@@ -48,5 +48,4 @@ executable shake-watch
                      , filepath
                      , unix
                      , ghcid
-                     , optparse-applicative
-                     , Cabal
+                     , optparse-applicative  >= 0.14.0.0

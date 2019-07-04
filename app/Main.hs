@@ -5,38 +5,28 @@
 module Main where
 
 import           Control.Concurrent
-import           Control.Exception                             (SomeAsyncException (..),
-                                                                fromException,
-                                                                throwIO, try)
-import           Data.Functor                                  (void)
+import           Control.Exception             (SomeAsyncException (..),
+                                                fromException, throwIO, try)
+import           Data.Functor                  (void)
 import           Data.List
 import           Data.Maybe
-import qualified Data.Set                                      as Set
-import           Development.Shake                             hiding
-                                                                (doesFileExist)
+import           Data.Semigroup                ((<>))
+import qualified Data.Set                      as Set
+import           Development.Shake             hiding (doesFileExist)
 import           Development.Shake.Classes
 import           Development.Shake.Database
 import           Development.Shake.FilePath
 import           Development.Shake.Watch.Types
-import           Distribution.PackageDescription               (GenericPackageDescription,
-                                                                PackageDescription,
-                                                                allBuildInfo,
-                                                                hsSourceDirs,
-                                                                packageDescription)
-import           Distribution.PackageDescription.Configuration (flattenPackageDescription)
-import           Distribution.PackageDescription.Parsec        (readGenericPackageDescription)
-import           Distribution.Verbosity                        (silent)
-import           Language.Haskell.Ghcid                        as Ghcid
+import           Language.Haskell.Ghcid        as Ghcid
 import           Options.Applicative
-import           System.Directory                              (doesFileExist, getCurrentDirectory,
-                                                                listDirectory)
-import           System.Environment                            (getArgs,
-                                                                getEnvironment,
-                                                                withArgs)
+import           System.Directory              (doesFileExist,
+                                                getCurrentDirectory,
+                                                listDirectory)
+import           System.Environment            (getArgs, getEnvironment,
+                                                withArgs)
 import           System.FilePath
-import           System.FSNotify                               (eventPath,
-                                                                watchTreeChan,
-                                                                withManager)
+import           System.FSNotify               (eventPath, watchTreeChan,
+                                                withManager)
 import           System.Posix.Process
 
 --------------------------------------------------------------------------------
