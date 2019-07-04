@@ -3,22 +3,42 @@ version:             0.1.0.0
 synopsis:            watching file changes for Shake build system
 -- description:
 homepage:            https://github.com/sigrlami/shake-watch#readme
-license:             BSD3
+license:             MIT
 license-file:        LICENSE
 author:              Sergey Bushnyak
 maintainer:          sergey.bushnyak@sigrlami.eu
-copyright:           Copyright: (c) 2019 Sergey Bushnyak
+copyright:           Copyright: (c) 2019, Migamake Pte Ltd
+                              , (c) 2019, Sergey Bushnyak
 category:            Web
 build-type:          Simple
 cabal-version:       >=1.10
 extra-source-files:  README.md
 
-executable shake-watch
+library
   hs-source-dirs:      src
+  exposed-modules:     Shake.Development.Watch
+                     , Shake.Development.Watch.Utils
+  build-depends:       base >= 4.7 && < 5
+                     , shake
+                     , text
+                     , time
+                     , directory
+                     , fsnotify
+                     , containers
+                     , filepath
+                     , unix
+                     , ghcid
+                     , optparse-applicative
+                     , Cabal
+  default-language:    Haskell2010
+
+executable shake-watch
+  hs-source-dirs:      app
   main-is:             Main.hs
   default-language:    Haskell2010
   build-depends:       base >= 4.7 && < 5
                      , shake
+                     , shake-watch
                      , text
                      , time
                      , directory
