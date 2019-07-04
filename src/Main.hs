@@ -4,22 +4,39 @@
 
 module Main where
 
-import           Control.Concurrent         (newChan, readChan)
-import           Control.Exception          (SomeAsyncException (..),
-                                             fromException, throwIO, try)
-import           Data.Functor               (void)
-import qualified Data.Set                   as Set
-import           Development.Shake
+import           Control.Concurrent                            (newChan,
+                                                                readChan)
+import           Control.Exception                             (SomeAsyncException (..),
+                                                                fromException,
+                                                                throwIO, try)
+import           Data.Functor                                  (void)
+import           Data.List
+import           Data.Maybe
+import qualified Data.Set                                      as Set
+import           Development.Shake                             hiding
+                                                                (doesFileExist)
 import           Development.Shake.Classes
 import           Development.Shake.Database
 import           Development.Shake.FilePath
-import           Language.Haskell.Ghcid     as Ghcid
+import           Distribution.PackageDescription               (GenericPackageDescription,
+                                                                PackageDescription,
+                                                                allBuildInfo,
+                                                                hsSourceDirs,
+                                                                packageDescription)
+import           Distribution.PackageDescription.Configuration (flattenPackageDescription)
+import           Distribution.PackageDescription.Parsec        (readGenericPackageDescription)
+import           Distribution.Verbosity                        (silent)
+import           Language.Haskell.Ghcid                        as Ghcid
 import           Options.Applicative
-import           System.Directory           (getCurrentDirectory)
-import           System.Environment         (getArgs, getEnvironment, withArgs)
+import           System.Directory                              (doesFileExist, getCurrentDirectory,
+                                                                listDirectory)
+import           System.Environment                            (getArgs,
+                                                                getEnvironment,
+                                                                withArgs)
 import           System.FilePath
-import           System.FSNotify            (eventPath, watchTreeChan,
-                                             withManager)
+import           System.FSNotify                               (eventPath,
+                                                                watchTreeChan,
+                                                                withManager)
 import           System.Posix.Process
 
 --------------------------------------------------------------------------------
@@ -67,7 +84,7 @@ watchOpt =
                   <> long "Switch, to actually watch outside directories for changes")
     <*> option auto (  long "throttle"
                     <> short 't'
-                    <> value 0
+                    <> value 100
                     <> metavar "MILLIS"
                     <> help "milliseconds to wait for duplicate events")
     <*> (some . strArgument)
@@ -94,7 +111,7 @@ main = do
 
 runWatcher :: WatchOpt -> IO ()
 runWatcher opts@(WatchOpt wp ip ep ch re wa dl a) = do
-  putStrLn $ "Watching external dir:" ++ wp
+  putStrLn $ "Watching external dir:" ++  wp
 
   -- check whether we're running in cache mode
   case ch of
@@ -106,34 +123,55 @@ runWatcher opts@(WatchOpt wp ip ep ch re wa dl a) = do
       case re of
         False -> return $ ()
         True  -> do
-          -- TODO: create totally new Shake db
+          -- TODO: create totally new Shake dbщ
           return $ ()
 
       let sopts = shakeOptions{shakeFiles="/dev/null"}
 
       (shDb, shClose) <- shakeOpenDatabase sopts dummyRules
       shakeDb         <- shDb
+      env             <- getEnvironment
+
+      cwd   <- getCurrentDirectory
+      files <- listDirectory cwd
+      let cbl = head $ filter (isInfixOf ".cabal") files
+      hs <- getSourceDirectories cbl
+
 
       -- Get the list of files that shake considers to be alive. This assumes
-      -- we've set
+      -- user set
       --
       --   shakeLiveFiles = [".shake/live"]
       --
-      cwd   <- getCurrentDirectory
-      files <- Set.fromList . map (cwd </>) . lines <$> readFile ".shake/live"
+      isShakeLiveAvailable <- doesFileExist ".shake/live"
+      case isShakeLiveAvailable of
+        False -> do
+          -- no Shake live defined in project
+          -- identify files to watch on our own
 
-      -- Start watching the filesystem, and rebuild once any of these files
-      -- changes.
-      withManager $ \manager -> do
-        chan <- newChan
-        void (watchTreeChan manager "." ((`elem` files) . eventPath) chan)
-        void (readChan chan) -- We block here
+          -- 1 haskell source files
+          -- 2 additional files
+          putStrLn $ show $ hs
+          return $ ()
 
-        -- Loop. Here my compiled shakefile is itself a build target, so I exec
-        -- it rather than loop here, to get the latest & greatest shake
-        -- executable.
-        env <- getEnvironment
-        executeFile "bin/Shakefile" False (["watch"]) (Just env)
+        True  -> do
+          files <- Set.fromList . map (cwd </>) . lines <$> readFile ".shake/live"
+          putStrLn $ show $ files
+
+
+
+          -- Start watching the filesystem with FSNotify, and rebuild once any of these files
+          -- changes.
+          withManager $ \manager -> do
+            chan <- newChan
+            void (watchTreeChan manager "." ((`elem` files) . eventPath) chan)
+            void (readChan chan) -- We block here
+
+            -- Loop. Here my compiled shakefile is itself a build target, so I exec
+            -- it rather than loop here, to get the latest & greatest shake
+            -- executable.
+            env <- getEnvironment
+            executeFile "bin/Shakefile" False (["watch"]) (Just env)
 
       shClose
 
@@ -159,3 +197,17 @@ ghcidRestart = do
   ghcidStop
   ghcidStart
   return $ ()
+
+
+--------------------------------------------------------------------------------
+
+collectSourceDirectories :: PackageDescription -> [FilePath]
+collectSourceDirectories =
+  concatMap hsSourceDirs . allBuildInfo
+
+
+getSourceDirectories :: FilePath -> IO [FilePath]
+getSourceDirectories cabalFile = do
+  genpkg <- readGenericPackageDescription silent cabalFile
+  let pkg = packageDescription genpkg
+  return (collectSourceDirectories (flattenPackageDescription genpkg))

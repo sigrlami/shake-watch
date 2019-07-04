@@ -28,3 +28,4 @@ executable shake-watch
                      , unix
                      , ghcid
                      , optparse-applicative
+                     , Cabal
