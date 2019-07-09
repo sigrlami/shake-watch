@@ -1,0 +1,44 @@
+name: shake-watch
+version: '0.1.0.3'
+synopsis: watching file changes for Shake build system
+category: Web
+author: Sergey Bushnyak
+maintainer: sergey.bushnyak@sigrlami.eu
+copyright:
+- ! 'Copyright: (c) 2019'
+- Migamake Pte Ltd
+- (c) 2019
+- Sergey Bushnyak
+license: MIT
+homepage: https://github.com/sigrlami/shake-watch#readme
+extra-source-files:
+- README.md
+dependencies:
+- shake
+- text
+- time
+- directory
+- fsnotify
+- containers
+- filepath
+- unix
+- ghcid
+library:
+  source-dirs: src
+  exposed-modules:
+  - Development.Shake.Watch
+  - Development.Shake.Watch.Utils
+  - Development.Shake.Watch.Types
+  dependencies:
+  - base >=4 && <5
+  - optparse-applicative
+  - Cabal
+  - twitch
+executables:
+  shake-watch:
+    main: Main.hs
+    source-dirs: app
+    dependencies:
+    - base >=4.7 && <5
+    - shake-watch
+    - optparse-applicative >=0.14.0.0
