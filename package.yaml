@@ -33,7 +33,6 @@ library:
   - base >=4 && <5
   - optparse-applicative
   - Cabal
-  - twitch
 executables:
   shake-watch:
     main: Main.hs

@@ -17,6 +17,8 @@ import           Development.Shake                             hiding
 import           Development.Shake.Classes
 import           Development.Shake.Database
 import           Development.Shake.FilePath
+import           Development.Shake.Watch.Types
+import           Development.Shake.Watch.Utils
 import           Distribution.PackageDescription               (GenericPackageDescription,
                                                                 PackageDescription,
                                                                 allBuildInfo,
@@ -37,9 +39,6 @@ import           System.FSNotify                               (eventPath,
                                                                 watchTreeChan,
                                                                 withManager)
 import           System.Posix.Process
-
-import           Development.Shake.Watch.Types
-import           Development.Shake.Watch.Utils
 
 --------------------------------------------------------------------------------
 
@@ -79,7 +78,7 @@ runWatcher shOpts opts@(WatchOpt wp ip ep ch re wa dl a) rules = do
       isShakeLiveAvailable <- doesFileExist ".shake/live"
       case isShakeLiveAvailable of
         False -> do
-          -- no Shake live defined in project
+          -- No Shake live defined in project
           -- identify files to watch on our own
 
           -- 1 find haskell source directories
@@ -103,7 +102,6 @@ runWatcher shOpts opts@(WatchOpt wp ip ep ch re wa dl a) rules = do
 
               env <- getEnvironment
               executeFile "bin/Shakefile" False (["watch"]) (Just env)
-
 
           return $ ()
 
