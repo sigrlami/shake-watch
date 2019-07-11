@@ -8,6 +8,9 @@ import           Control.Concurrent
 import           Control.Exception                             (SomeAsyncException (..),
                                                                 fromException,
                                                                 throwIO, try)
+import           Control.Monad                                 (forM_, forever,
+                                                                liftM, mzero,
+                                                                when)
 import           Data.Functor                                  (void)
 import           Data.List
 import           Data.Maybe
@@ -36,6 +39,7 @@ import           System.Environment                            (getArgs,
                                                                 withArgs)
 import           System.FilePath
 import           System.FSNotify                               (eventPath,
+                                                                watchDir,
                                                                 watchTreeChan,
                                                                 withManager)
 import           System.Posix.Process
@@ -61,8 +65,9 @@ runWatcher shOpts opts@(WatchOpt wp ip ep ch re wa dl a) rules = do
 
       let sopts = shakeOptions{shakeFiles="/dev/null"}
 
-      (shDb, shClose) <- shakeOpenDatabase shOpts rules
-      shakeDb         <- shDb
+      -- .shake/.shake.database
+      --(shDb, shClose) <- shakeOpenDatabase shOpts rules
+      --shakeDb         <- shDb
       env             <- getEnvironment
 
       cwd   <- getCurrentDirectory
@@ -82,27 +87,43 @@ runWatcher shOpts opts@(WatchOpt wp ip ep ch re wa dl a) rules = do
           -- identify files to watch on our own
 
           -- 1 find haskell source directories
+          let tr = cwd ++ "/" ++ (head hs) ++ "/"
           putStrLn $ "shake-watch: tracking haskell at: " ++ (show $ hs)
-          hsfiles <- listDirectory $ head hs
-          forkIO $
-            withManager $
+          putStrLn $ "shake-watch: " ++ tr
+
+          hsfiles <- listDirectory $ tr
+          putStrLn $ "shake-watch:  "
+          mapM_ (\x -> putStrLn $ "  -" ++ (show x)) hsfiles
+
+          forkIO $ withManager $
               \manager -> do
-                chan <- newChan
-                void (watchTreeChan manager "." ((`elem` hsfiles) . eventPath) chan)
-                void (readChan chan) -- We block here
-                -- TODO: load ghcid
+                watchDir
+                  manager         -- manager
+                  (tr)            -- directory to watch
+                  (const True)    -- predicate
+                  print           -- action
+
+                -- block for endless execution
+                forever $ threadDelay 100000
 
           -- 2 additional directories provided by shake-watch user
-          putStrLn $ "shake-watch: tracking additional files at " ++ (show $ wp)
+          putStrLn $ "shake-watch: tracking additional directory at: " ++ (show ip)
           withManager $
             \manager -> do
               chan <- newChan
-              void (watchTreeChan manager "." ((`elem` files) . eventPath) chan)
-              void (readChan chan) -- We block here
+              void (watchTreeChan
+                      manager
+                      ip
+                      ((`elem` files) . eventPath)
+                      chan
+                   )
+              -- block for endless execution
+              void (readChan chan)
 
               env <- getEnvironment
               executeFile "bin/Shakefile" False (["watch"]) (Just env)
 
+          putStrLn $ "shake-watch:  return"
           return $ ()
 
         True  -> do
@@ -122,7 +143,7 @@ runWatcher shOpts opts@(WatchOpt wp ip ep ch re wa dl a) rules = do
             env <- getEnvironment
             executeFile "bin/Shakefile" False (["watch"]) (Just env)
 
-      shClose
+      --shClose
 
 runWatcherUnCached :: WatchOpt -> IO ()
 runWatcherUnCached = undefined

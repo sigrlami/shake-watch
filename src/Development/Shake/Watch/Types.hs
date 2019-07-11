@@ -2,9 +2,10 @@ module Development.Shake.Watch.Types where
 
 import           GHC.Generics
 
-
 --------------------------------------------------------------------------------
 
+-- | Base options for the watch functionality
+--
 data WatchOpt =
   WatchOpt
     { watchPath   :: String    -- ^ path to watch dir, by default current
@@ -17,4 +18,6 @@ data WatchOpt =
     , action      :: [String]  -- ^ command to run
     } deriving (Show)
 
-defaultWatchOps = WatchOpt "" "" "" True True True 0 []
+-- | Default set of options for convinience
+defaultWatchOps =
+  WatchOpt "" "" "" True True True 0 []
