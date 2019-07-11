@@ -1,5 +1,5 @@
 name: shake-watch
-version: '0.1.0.3'
+version: '0.1.0.6'
 synopsis: watching file changes for Shake build system
 category: Web
 author: Sergey Bushnyak
