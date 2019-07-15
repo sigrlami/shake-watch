@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 32b242bf9c43b354979e04408b9dcf25eb330b1c0c3f3c882b2a640c0d5ae19c
+-- hash: 4430dceecc1fc60806b7fef2ca001aaa7de6fa045814a447ace1ec1b92783e7e
 
 name:           shake-watch
-version:        0.1.0.6
+version:        0.1.0.10
 synopsis:       watching file changes for Shake build system
 category:       Web
 homepage:       https://github.com/sigrlami/shake-watch#readme

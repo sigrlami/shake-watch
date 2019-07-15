@@ -32,25 +32,34 @@ import           Distribution.PackageDescription.Parsec        (readGenericPacka
 import           Distribution.Verbosity                        (silent)
 import           Language.Haskell.Ghcid                        as Ghcid
 import           Options.Applicative
+import           System.Console.GetOpt
 import           System.Directory                              (doesFileExist, getCurrentDirectory,
                                                                 listDirectory)
 import           System.Environment                            (getArgs,
                                                                 getEnvironment,
                                                                 withArgs)
 import           System.FilePath
-import           System.FSNotify                               (eventPath,
+import           System.FSNotify                               (Event (..),
+                                                                eventPath,
                                                                 watchDir,
+                                                                watchTree,
                                                                 watchTreeChan,
                                                                 withManager)
 import           System.Posix.Process
 
 --------------------------------------------------------------------------------
 
-runWatcher :: ShakeOptions -> WatchOpt -> Rules () -> IO ()
-runWatcher shOpts opts@(WatchOpt wp ip ep ch re wa dl a) rules = do
-  putStrLn $ "Watching external dir:" ++ wp
+type ShakeAction a =
+       ShakeOptions
+    -> [OptDescr (Either String a)]
+    -> (ShakeOptions -> [a] -> [String] -> IO (Maybe (ShakeOptions, Rules ())))
+    -> IO ()
 
-  -- check whether we're running in cache mode
+--runWatcher :: ShakeOptions -> WatchOpt -> Rules () -> ShakeAction a -> IO ()
+runWatcher shOpts opts@(WatchOpt wp ip ep ch re wa dl a) rules shAct = do
+  putStrLn $ "\nshake-watch: cwd - " ++ wp
+
+  -- check if we're running in cache mode
   case ch of
     False -> do
       runWatcherUnCached opts
@@ -60,7 +69,7 @@ runWatcher shOpts opts@(WatchOpt wp ip ep ch re wa dl a) rules = do
       case re of
         False -> return $ ()
         True  -> do
-          -- TODO: create totally new Shake dbщ
+          -- TODO: create totally new Shake db
           return $ ()
 
       let sopts = shakeOptions{shakeFiles="/dev/null"}
@@ -75,11 +84,9 @@ runWatcher shOpts opts@(WatchOpt wp ip ep ch re wa dl a) rules = do
       let cbl = head $ filter (isInfixOf ".cabal") files
       hs <- getSourceDirectories cbl
 
-      -- Get the list of files that shake considers to be alive. This assumes
-      -- user set
-      --
-      --   shakeLiveFiles = [".shake/live"]
-      --
+      -- Get the list of files that shake considers to be alive. s
+      -- This assume user set
+      -- shakeLiveFiles = [".shake/live"]
       isShakeLiveAvailable <- doesFileExist ".shake/live"
       case isShakeLiveAvailable of
         False -> do
@@ -88,12 +95,12 @@ runWatcher shOpts opts@(WatchOpt wp ip ep ch re wa dl a) rules = do
 
           -- 1 find haskell source directories
           let tr = cwd ++ "/" ++ (head hs) ++ "/"
-          putStrLn $ "shake-watch: tracking haskell at: " ++ (show $ hs)
+          putStrLn $ "shake-watch: tracking haskell at: " -- ++ (show $ hs)
           putStrLn $ "shake-watch: " ++ tr
 
           hsfiles <- listDirectory $ tr
           putStrLn $ "shake-watch:  "
-          mapM_ (\x -> putStrLn $ "  -" ++ (show x)) hsfiles
+          -- mapM_ (\x -> putStrLn $ "  -" ++ (show x)) hsfiles
 
           forkIO $ withManager $
               \manager -> do
@@ -101,29 +108,49 @@ runWatcher shOpts opts@(WatchOpt wp ip ep ch re wa dl a) rules = do
                   manager         -- manager
                   (tr)            -- directory to watch
                   (const True)    -- predicate
-                  print           -- action
+                  (\e -> do       -- action Event -> IO ()
+                    case e of
+                      Modified f t d -> do
+                        putStrLn $ "shake-watch:  "
+                        putStrLn $ "   changed " ++ f
+                        putStrLn $ "   reload ..."
+                        -- TODO: rebuild haskell
+                      Removed f t d -> do
+                        return $ ()
+                      _        -> do
+                        putStrLn $ "   " ++ show e
+                    return $ ()
+                  )
 
                 -- block for endless execution
                 forever $ threadDelay 100000
 
           -- 2 additional directories provided by shake-watch user
-          putStrLn $ "shake-watch: tracking additional directory at: " ++ (show ip)
-          withManager $
-            \manager -> do
-              chan <- newChan
-              void (watchTreeChan
-                      manager
-                      ip
-                      ((`elem` files) . eventPath)
-                      chan
-                   )
-              -- block for endless execution
-              void (readChan chan)
+          putStrLn $ "shake-watch: tracking additional directory at: "
+          putStrLn $ "shake-watch: " ++ ip
+          forkIO $ withManager $
+              \manager -> do
+                watchTree
+                  manager         -- manager
+                  (ip)            -- directory to watch
+                  (const True)    -- predicate
+                  (\e -> do       -- action
+                    case e of
+                      Modified f t d -> do
+                        putStrLn $ "shake-watch:  "
+                        putStrLn $ "   changed " ++ f
+                        putStrLn $ "   rebuild ..."
+                        -- run Shake action
+                        shAct
 
-              env <- getEnvironment
-              executeFile "bin/Shakefile" False (["watch"]) (Just env)
+                      Removed f t d -> do
+                        return $ ()
+                      _        -> do
+                        putStrLn $ "   " ++ show e
+                    return $ ()
+                  )
+                forever $ threadDelay 100000 -- block for endless execution
 
-          putStrLn $ "shake-watch:  return"
           return $ ()
 
         True  -> do
