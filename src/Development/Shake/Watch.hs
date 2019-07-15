@@ -39,12 +39,7 @@ import           System.Environment                            (getArgs,
                                                                 getEnvironment,
                                                                 withArgs)
 import           System.FilePath
-import           System.FSNotify                               (Event (..),
-                                                                eventPath,
-                                                                watchDir,
-                                                                watchTree,
-                                                                watchTreeChan,
-                                                                withManager)
+import qualified System.FSNotify                               as FSNotify
 import           System.Posix.Process
 
 --------------------------------------------------------------------------------
@@ -102,20 +97,20 @@ runWatcher shOpts opts@(WatchOpt wp ip ep ch re wa dl a) rules shAct = do
           putStrLn $ "shake-watch:  "
           -- mapM_ (\x -> putStrLn $ "  -" ++ (show x)) hsfiles
 
-          forkIO $ withManager $
+          forkIO $ FSNotify.withManager $
               \manager -> do
-                watchDir
+                FSNotify.watchTree
                   manager         -- manager
                   (tr)            -- directory to watch
                   (const True)    -- predicate
                   (\e -> do       -- action Event -> IO ()
                     case e of
-                      Modified f t d -> do
+                      FSNotify.Modified path time isDir -> do
                         putStrLn $ "shake-watch:  "
-                        putStrLn $ "   changed " ++ f
+                        putStrLn $ "   changed " ++ path
                         putStrLn $ "   reload ..."
                         -- TODO: rebuild haskell
-                      Removed f t d -> do
+                      FSNotify.Removed path time isDir -> do
                         return $ ()
                       _        -> do
                         putStrLn $ "   " ++ show e
@@ -128,22 +123,22 @@ runWatcher shOpts opts@(WatchOpt wp ip ep ch re wa dl a) rules shAct = do
           -- 2 additional directories provided by shake-watch user
           putStrLn $ "shake-watch: tracking additional directory at: "
           putStrLn $ "shake-watch: " ++ ip
-          forkIO $ withManager $
+          forkIO $ FSNotify.withManager $
               \manager -> do
-                watchTree
+                FSNotify.watchTree
                   manager         -- manager
                   (ip)            -- directory to watch
                   (const True)    -- predicate
                   (\e -> do       -- action
                     case e of
-                      Modified f t d -> do
+                      FSNotify.Modified path time isDir -> do
                         putStrLn $ "shake-watch:  "
-                        putStrLn $ "   changed " ++ f
+                        putStrLn $ "   changed " ++ path
                         putStrLn $ "   rebuild ..."
                         -- run Shake action
                         shAct
 
-                      Removed f t d -> do
+                      FSNotify.Removed path time isDir -> do
                         return $ ()
                       _        -> do
                         putStrLn $ "   " ++ show e
@@ -159,9 +154,9 @@ runWatcher shOpts opts@(WatchOpt wp ip ep ch re wa dl a) rules shAct = do
 
           -- Start watching the filesystem with FSNotify, and rebuild once any of these files
           -- changes.
-          withManager $ \manager -> do
+          FSNotify.withManager $ \manager -> do
             chan <- newChan
-            void (watchTreeChan manager "." ((`elem` files) . eventPath) chan)
+            void (FSNotify.watchTreeChan manager "." ((`elem` files) . FSNotify.eventPath) chan)
             void (readChan chan) -- We block here
 
             -- Loop. Here my compiled shakefile is itself a build target, so I exec
