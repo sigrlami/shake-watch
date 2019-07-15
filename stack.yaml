@@ -1,5 +1,6 @@
 resolver: lts-12.0
 
+allow-newer: false
 packages:
 - .
 

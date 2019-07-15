@@ -17,7 +17,6 @@ import           Development.Shake.Classes
 import           Development.Shake.Database
 import           Development.Shake.FilePath
 import           Development.Shake.Watch.Types
-import           Language.Haskell.Ghcid        as Ghcid
 import           Options.Applicative
 import           System.Directory              (doesFileExist,
                                                 getCurrentDirectory,

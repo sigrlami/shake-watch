@@ -18,7 +18,7 @@ dependencies:
 - text
 - time
 - directory
-- fsnotify >= 0.3.0.1
+- fsnotify >= 0.3.0.0
 - containers
 - filepath
 - unix
