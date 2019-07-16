@@ -31,6 +31,8 @@ import           Distribution.PackageDescription.Configuration (flattenPackageDe
 import           Distribution.PackageDescription.Parsec        (readGenericPackageDescription)
 import           Distribution.Verbosity                        (silent)
 import           Language.Haskell.Ghcid                        as Ghcid
+import           Network.Socket                                (withSocketsDo)
+import qualified Network.WebSockets                            as WS
 import           Options.Applicative
 import           System.Console.GetOpt
 import           System.Directory                              (doesFileExist, getCurrentDirectory,
@@ -41,6 +43,7 @@ import           System.Environment                            (getArgs,
 import           System.FilePath
 import qualified System.FSNotify                               as FSNotify
 import           System.Posix.Process
+
 
 --------------------------------------------------------------------------------
 
@@ -137,6 +140,9 @@ runWatcher shOpts opts@(WatchOpt wp ip ep ch re wa dl a) rules shAct = do
                         putStrLn $ "   rebuild ..."
                         -- run Shake action
                         shAct
+                        -- notify Preview server that rebuild happend
+                        withSocketsDo
+                          $ WS.runClient "127.0.0.1" 3030 "/" wsClient
 
                       FSNotify.Removed path time isDir -> do
                         return $ ()

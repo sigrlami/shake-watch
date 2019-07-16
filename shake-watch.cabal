@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 522dde9c9df4e1d12fd0f5ec5226bfe09b95f14cb16975e558885f7417941997
+-- hash: 2f2d1d0f7e1918b82e5c2e562a40a6518f074f96903f63f9d18d51cd3c34c769
 
 name:           shake-watch
 version:        0.1.0.10
@@ -40,11 +40,13 @@ library
     , filepath
     , fsnotify >=0.3.0.0
     , ghcid
+    , network
     , optparse-applicative
     , shake
     , text
     , time
     , unix
+    , websockets
   default-language: Haskell2010
 
 executable shake-watch
@@ -60,10 +62,12 @@ executable shake-watch
     , filepath
     , fsnotify >=0.3.0.0
     , ghcid
+    , network
     , optparse-applicative >=0.14.0.0
     , shake
     , shake-watch
     , text
     , time
     , unix
+    , websockets
   default-language: Haskell2010
